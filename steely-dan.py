@@ -60,13 +60,20 @@ def predict_data(m, data, periodsToPredict, frequency):
 
     return forecast
 
-def print_prediction(column, prediction, number):
-    print(prediction.columns.tolist())
+
+
+def print_prediction(m, column, prediction, number):
     part = prediction[columnsToShow].tail(number)
 
     print("Prediction for \"" + column + "\":")
 
     print(part)
+
+    figure = m.plot(prediction)
+
+    figure.title = "Prediction of " + column
+
+    figure.show()
 
 data = get_data(cruFile)
 
@@ -77,4 +84,6 @@ for column in columnsToPredict:
 
     prediction = predict_data(m, preprocessedData, weeksToPredict, weeklyFrequency)
 
-    print_prediction(column, prediction, weeksToShow)
+    print_prediction(m, column, prediction, weeksToShow)
+
+input("Press Enter to end program...")
