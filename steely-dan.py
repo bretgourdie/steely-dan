@@ -31,10 +31,22 @@ def preprocess_data(data, cruDataPointColumn):
 
     return prophetForm
 
+def get_covid_event():
+    covid_spans = pd.DataFrame([
+        {"holiday": "lockdown", "ds": "2020-03-21", "lower_window": 0, "ds_upper": "2022-04-22"}
+    ])
+
+    for t_col in ["ds", "ds_upper"]:
+        covid_spans[t_col] = pd.to_datetime(covid_spans[t_col])
+
+    covid_spans["upper_window"] = (covid_spans["ds_upper"] - covid_spans["ds"]).dt.days
+
+    return covid_spans
+
 def fit(data):
     print("Fitting data")
 
-    m = Prophet()
+    m = Prophet(yearly_seasonality=20, holidays=get_covid_event())
     m.fit(data)
 
     return m
