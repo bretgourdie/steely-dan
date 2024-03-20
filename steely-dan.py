@@ -1,28 +1,35 @@
 from prophet import Prophet
-import yfinance as yf
+import pandas as pd
 
-ticker = "HRC=F"
-daysToPredict = 14
-daysToShow = 25
+cruFile = "CRU Weekly Historical Data.xlsx"
+cruDateColumn = "DATE"
+prophetDateColumn = "ds"
+prophetDataPointColumn = "y"
+weeksToPredict = 52 // 2
+weeksToShow = 52 // 2 + 8
+weeklyFrequency = "W"
+columnsToPredict = ["HR / ton", "CR / ton"]
+columnsToShow = ["ds", "trend", "yhat", "weekly"]
 
-def get_data(ticker):
+def get_data(filename):
     print("Getting data")
 
-    # data = yf.download(ticker, start=start_date, end=end_date)
-    data = yf.download(ticker)
+    data = pd.ExcelFile(filename)
 
-    return data
+    sheets = pd.read_excel(data, skiprows = 1)
 
-def preprocess_data(data):
+    return sheets
+
+def preprocess_data(data, cruDataPointColumn):
     print("Preprocessing data")
 
-    data.reset_index(inplace=True)
-    closeData = data[["Date", "Close"]]
+    timeAndData = data[[cruDateColumn, cruDataPointColumn]]
 
-    closeData.reset_index(inplace=True)
+    renameColumns = {cruDateColumn: prophetDateColumn, cruDataPointColumn: prophetDataPointColumn}
 
-    close = closeData.rename(columns={"Date": "ds", "Close": "y"})
-    return close
+    prophetForm = timeAndData.rename(columns=renameColumns)
+
+    return prophetForm
 
 def fit(data):
     print("Fitting data")
@@ -32,26 +39,30 @@ def fit(data):
 
     return m
 
-def predict_data(m, data, periodsToPredict):
+def predict_data(m, data, periodsToPredict, frequency):
     print("Predicting data")
 
-    future = m.make_future_dataframe(periods = periodsToPredict)
+    future = m.make_future_dataframe(periods=periodsToPredict, freq=frequency)
 
     forecast = m.predict(future)
 
     return forecast
 
-def print_prediction(prediction, number):
-    part = prediction[["ds", "yhat", "yhat_lower", "yhat_upper"]].tail(number)
+def print_prediction(column, prediction, number):
+    print(prediction.columns.tolist())
+    part = prediction[columnsToShow].tail(number)
+
+    print("Prediction for \"" + column + "\":")
 
     print(part)
 
-data = get_data(ticker)
+data = get_data(cruFile)
 
-preprocessedData = preprocess_data(data)
+for column in columnsToPredict:
+    preprocessedData = preprocess_data(data, column)
 
-m = fit(preprocessedData)
+    m = fit(preprocessedData)
 
-prediction = predict_data(m, preprocessedData, daysToPredict)
+    prediction = predict_data(m, preprocessedData, weeksToPredict, weeklyFrequency)
 
-print_prediction(prediction, daysToShow)
+    print_prediction(column, prediction, weeksToShow)
